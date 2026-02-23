@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="version" content="20260223-BASIC-CHART-v12-{{ v }}">
+    <meta name="version" content="20260223-BASIC-CHART-v12.1-{{ v }}">
     <title>27币涨跌幅追踪系统 v12 - 基础图表版</title>
     <!-- 
     ============================================================
@@ -3613,7 +3613,7 @@ pm2 status                                                # 查看所有进程�
 
     <script>
         // 🔥 版本标识: 20260223-FULL-DATA-FIX-v9
-        console.log('🔥 JavaScript版本: 20260223-BASIC-CHART-v12 - 基础图表先运行（暂时禁用复杂scatter系列）');
+        console.log('🔥 JavaScript版本: 20260223-BASIC-CHART-v12.1 - 删除残留代码，修复语法错误');
         console.log('📦 所有数据(RSI、27币之和、上涨占比)存储在同一个JSONL文件中');
         console.log('🚀 智能加载优化: 自动检测数据量，确保加载完整24小时数据');
         console.log('⚡ 修复15:48之前数据缺失问题，确保00:00-23:59完整显示');
@@ -5589,231 +5589,17 @@ pm2 status                                                # 查看所有进程�
                         }
                         */
                     ]
-                                console.log('🔍 开始生成日内模式scatter系列数据...');
-                                console.log('📊 intradayPatternsData:', {
-                                    exists: !!intradayPatternsData,
-                                    isArray: Array.isArray(intradayPatternsData),
-                                    length: intradayPatternsData ? intradayPatternsData.length : 0
-                                });
-                                
-                                const patternPoints = [];
-                                
-                                if (intradayPatternsData && intradayPatternsData.length > 0) {
-                                    console.log('✅ intradayPatternsData有数据，开始处理...');
-                                    
-                                    // 🔥 显示所有模式（包括被禁止的），用不同样式区分
-                                    console.log(`🔍 准备显示所有 ${intradayPatternsData.length} 个模式检测信号`);
-                                    
-                                    intradayPatternsData.forEach((pattern, idx) => {
-                                        // 解析时间范围（例如："06:30-06:50"）
-                                        const timeRange = pattern.time_range || '';
-                                        const timeParts = timeRange.split('-');
-                                        if (timeParts.length !== 2) {
-                                            console.warn(`⚠️ 模式 ${idx} 时间范围格式错误: ${timeRange}`);
-                                            return;
-                                        }
-                                        
-                                        // 使用时间范围的中间时间点
-                                        const startTime = timeParts[0].trim();
-                                        const endTime = timeParts[1].trim();
-                                        
-                                        // 查找起始和结束时间的索引
-                                        let startIndex = -1;
-                                        let endIndex = -1;
-                                        
-                                        for (let i = 0; i < times.length; i++) {
-                                            const chartTime = times[i].substring(0, 5);  // HH:MM
-                                            if (chartTime === startTime) startIndex = i;
-                                            if (chartTime === endTime) endIndex = i;
-                                        }
-                                        
-                                        if (startIndex >= 0 && endIndex >= 0) {
-                                            // 使用中间点的索引和涨跌幅
-                                            const middleIndex = Math.floor((startIndex + endIndex) / 2);
-                                            
-                                            if (changes[middleIndex] !== undefined) {
-                                                // 根据信号类型确定颜色和图标
-                                                const signalText = pattern.signal || '';
-                                                let patternType = 'unknown';
-                                                
-                                                // 优先判断做空信号
-                                                if (signalText.includes('做空') || signalText.includes('新低')) {
-                                                    patternType = 'short';  // 做空信号
-                                                } 
-                                                // 判断做多信号（包括：做多、开多单、低吸、抄底、试仓）
-                                                else if (signalText.includes('做多') || signalText.includes('开多') || 
-                                                         signalText.includes('低吸') || signalText.includes('抄底') || 
-                                                         signalText.includes('试仓')) {
-                                                    patternType = 'long';   // 做多信号
-                                                } 
-                                                // 判断观望信号
-                                                else if (signalText.includes('观望') || signalText.includes('等待')) {
-                                                    patternType = 'wait';   // 观望信号
-                                                }
-                                                
-                                                patternPoints.push({
-                                                    value: [middleIndex, changes[middleIndex]],
-                                                    patternType: patternType,
-                                                    patternName: pattern.pattern_name,
-                                                    signal: signalText,
-                                                    timeRange: timeRange,
-                                                    bars: pattern.bars || []
-                                                });
-                                                
-                                                console.log(`✅ 添加模式点 ${idx}: ${pattern.pattern_name} @ ${timeRange}, 信号=${signalText}, 索引=${middleIndex}, 涨跌幅=${changes[middleIndex].toFixed(2)}%`);
-                                            }
-                                        } else {
-                                            console.warn(`⚠️ 模式 ${idx} 无法匹配时间范围: ${timeRange}, startIndex=${startIndex}, endIndex=${endIndex}`);
-                                        }
-                                    });
-                                    
-                                    console.log('✅ 日内模式scatter系列数据生成完成，总点数:', patternPoints.length);
-                                } else {
-                                    console.warn('⚠️ intradayPatternsData为空或不存在');
-                                }
-                                
-                                return patternPoints;
-                            })(),
-                            symbolSize: 35,  // 大尺寸，显眼
-                            symbol: function(data) {
-                                // 根据模式类型设置形状
-                                const type = data.patternType;
-                                if (type === 'short') return 'triangle';  // 倒三角 - 做空
-                                if (type === 'long') return 'arrow';      // 箭头 - 做多
-                                if (type === 'wait') return 'diamond';    // 钻石 - 观望
-                                return 'roundRect';
-                            },
-                            symbolRotate: function(data) {
-                                const type = data.patternType;
-                                return type === 'short' ? 180 : 0;  // 做空信号倒置
-                            },
-                            itemStyle: {
-                                color: function(params) {
-                                    const type = params.data.patternType;
-                                    if (type === 'short') return '#EF4444';   // 亮红色 - 做空
-                                    if (type === 'long') return '#10B981';    // 亮绿色 - 做多
-                                    if (type === 'wait') return '#F59E0B';    // 橙色 - 观望
-                                    return '#6B7280';
-                                },
-                                borderColor: '#FFFFFF',
-                                borderWidth: 3,
-                                shadowBlur: 10,
-                                shadowColor: function(params) {
-                                    const type = params.data.patternType;
-                                    if (type === 'short') return 'rgba(239, 68, 68, 0.6)';
-                                    if (type === 'long') return 'rgba(16, 185, 129, 0.6)';
-                                    if (type === 'wait') return 'rgba(245, 158, 11, 0.6)';
-                                    return 'rgba(0, 0, 0, 0.3)';
-                                },
-                                shadowOffsetX: 0,
-                                shadowOffsetY: 3
-                            },
-                            label: {
-                                show: true,
-                                position: function(params) {
-                                    const type = params.data.patternType;
-                                    return type === 'short' ? 'top' : 'bottom';
-                                },
-                                formatter: function(params) {
-                                    const data = params.data;
-                                    const type = data.patternType;
-                                    
-                                    // 简化的标签
-                                    if (type === 'short') return '🔻 做空';
-                                    if (type === 'long') return '🚀 做多';
-                                    if (type === 'wait') return '⏸️ 观望';
-                                    return data.patternName;
-                                },
-                                fontSize: 16,  // 增大字号从15到16
-                                fontWeight: 'bold',
-                                color: function(params) {
-                                    // 使用高对比度的文字颜色
-                                    const type = params.data.patternType;
-                                    if (type === 'short') return '#FFFFFF';   // 白色 - 红色背景
-                                    if (type === 'long') return '#FFFFFF';    // 白色 - 绿色背景
-                                    if (type === 'wait') return '#FFFFFF';    // 白色 - 橙色背景
-                                    return '#FFFFFF';
-                                },
-                                backgroundColor: function(params) {
-                                    const type = params.data.patternType;
-                                    if (type === 'short') return '#DC2626';   // 亮红色背景（从B91C1C改为更亮）
-                                    if (type === 'long') return '#059669';    // 亮绿色背景（从047857改为更亮）
-                                    if (type === 'wait') return '#D97706';    // 亮橙色背景（从B45309改为更亮）
-                                    return '#374151';
-                                },
-                                padding: [8, 14],  // 增加内边距
-                                borderRadius: 6,
-                                borderWidth: 2,  // 添加边框
-                                borderColor: function(params) {
-                                    const type = params.data.patternType;
-                                    if (type === 'short') return '#FECACA';   // 浅红色边框
-                                    if (type === 'long') return '#A7F3D0';    // 浅绿色边框
-                                    if (type === 'wait') return '#FDE68A';    // 浅黄色边框
-                                    return '#9CA3AF';
-                                },
-                                shadowBlur: 12,  // 增强阴影
-                                shadowColor: 'rgba(0, 0, 0, 0.5)',  // 更深的阴影
-                                shadowOffsetY: 3,
-                                textBorderColor: function(params) {
-                                    const type = params.data.patternType;
-                                    if (type === 'short') return '#7F1D1D';   // 深红色文字描边
-                                    if (type === 'long') return '#064E3B';    // 深绿色文字描边
-                                    if (type === 'wait') return '#78350F';    // 深橙色文字描边
-                                    return '#1F2937';
-                                },
-                                textBorderWidth: 1.5  // 增加描边宽度从1到1.5
-                            },
-                            tooltip: {
-                                formatter: function(params) {
-                                    const data = params.data;
-                                    const barsHtml = data.bars.map(bar => 
-                                        `<div style="display: inline-block; margin: 2px 4px; padding: 2px 6px; background: ${
-                                            bar.color === '红色' ? '#FEE2E2' : 
-                                            bar.color === '绿色' ? '#D1FAE5' : 
-                                            bar.color === '黄色' ? '#FEF3C7' : '#F3F4F6'
-                                        }; border-radius: 3px; font-size: 11px;">
-                                            ${bar.time} <strong style="color: ${
-                                                bar.color === '红色' ? '#DC2626' : 
-                                                bar.color === '绿色' ? '#059669' : 
-                                                bar.color === '黄色' ? '#D97706' : '#6B7280'
-                                            };">${bar.ratio}%</strong>
-                                        </div>`
-                                    ).join('');
-                                    
-                                    return `<div style="padding: 10px; min-width: 250px; max-width: 400px;">
-                                        <div style="font-weight: bold; font-size: 15px; margin-bottom: 8px; color: #111827;">
-                                            <i class="fas fa-chart-line" style="margin-right: 6px; color: #3B82F6;"></i>${data.patternName}
-                                        </div>
-                                        <div style="margin: 6px 0; padding: 6px 8px; background: #F3F4F6; border-radius: 4px; font-size: 12px;">
-                                            <strong>时间范围:</strong> ${data.timeRange}
-                                        </div>
-                                        <div style="margin: 6px 0; padding: 6px 8px; background: #FEF3C7; border-radius: 4px; font-size: 12px;">
-                                            <strong>操作建议:</strong> <span style="color: #D97706; font-weight: 600;">${data.signal}</span>
-                                        </div>
-                                        <div style="margin: 6px 0; padding: 6px 8px; background: #E0E7FF; border-radius: 4px; font-size: 12px;">
-                                            <strong>涨跌幅:</strong> ${data.value[1].toFixed(2)}%
-                                        </div>
-                                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #E5E7EB;">
-                                            <div style="font-size: 11px; color: #6B7280; margin-bottom: 4px;"><strong>10分钟柱子:</strong></div>
-                                            ${barsHtml}
-                                        </div>
-                                    </div>`;
-                                }
-                            },
-                            zlevel: 15,  // 在市场情绪信号之上显示
-                            silent: false
-                        }]
                     }, false, false); // notMerge=false 防止空数据时清空图表, lazyUpdate=false 立即更新
-                        console.log('✅ trendChart.setOption 执行成功 (notMerge=false)');
-                        console.log('📊 图表数据点数:', times.length, 'changes数据点数:', changes.length);
-                    } catch (error) {
-                        console.error('❌ trendChart.setOption 执行失败:', error);
-                        console.error('错误堆栈:', error.stack);
-                    }
-                    
-                    // 立即resize一次（带错误捕获）
-                    try {
-                        trendChart.resize();
+                    console.log('✅ trendChart.setOption 执行成功 (notMerge=false)');
+                    console.log('📊 图表数据点数:', times.length, 'changes数据点数:', changes.length);
+                } catch (error) {
+                    console.error('❌ trendChart.setOption 执行失败:', error);
+                    console.error('错误堆栈:', error.stack);
+                }
+                
+                // 立即resize一次（带错误捕获）
+                try {
+                    trendChart.resize();
                         console.log('📊 trendChart resize成功');
                     } catch (e) {
                         console.error('❌ trendChart resize失败:', e);
