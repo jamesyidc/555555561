@@ -1659,6 +1659,12 @@ def chart_test_page():
     """图表诊断测试页面"""
     return render_template('chart_test.html')
 
+@app.route('/chart-debug')
+def chart_debug_page():
+    """图表详细调试页面"""
+    return render_template('chart_debug.html')
+
+
 @app.route('/coin-change-tracker')
 def coin_change_tracker_page():
     """27币涨跌幅追踪系统页面"""
