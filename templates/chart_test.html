@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>图表诊断测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+        body { margin: 20px; font-family: Arial; }
+        #chart { width: 100%; height: 600px; border: 1px solid #ccc; }
+        .log { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>27币涨跌幅图表诊断</h1>
+    <div id="log" class="log"></div>
+    <div id="chart"></div>
+    
+    <script>
+        const log = (msg) => {
+            console.log(msg);
+            document.getElementById('log').innerHTML += msg + '<br>';
+        };
+        
+        log('开始诊断...');
+        
+        // 1. 测试 ECharts 加载
+        log('ECharts版本: ' + echarts.version);
+        
+        // 2. 测试API
+        log('正在获取数据...');
+        fetch('/api/coin-change-tracker/history?limit=10&date=2026-02-23&_t=' + Date.now())
+            .then(response => response.json())
+            .then(data => {
+                log('✅ API响应成功');
+                log('数据来源: ' + data.source);
+                log('返回记录数: ' + data.count);
+                
+                if (!data.data || data.data.length === 0) {
+                    log('❌ 没有数据！');
+                    return;
+                }
+                
+                // 3. 提取数据
+                const times = data.data.map(d => {
+                    if (d.beijing_time) {
+                        return d.beijing_time.split(' ')[1];
+                    }
+                    return 'unknown';
+                });
+                const changes = data.data.map(d => d.total_change);
+                
+                log('时间数据: ' + times.slice(0, 3).join(', ') + '...');
+                log('涨跌幅数据: ' + changes.slice(0, 3).join(', ') + '...');
+                
+                // 4. 初始化图表
+                log('初始化图表...');
+                const chartDom = document.getElementById('chart');
+                const myChart = echarts.init(chartDom);
+                
+                // 5. 设置配置
+                const option = {
+                    title: {
+                        text: '27币涨跌幅测试图表'
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: times
+                    },
+                    yAxis: {
+                        type: 'value'
+                    },
+                    series: [{
+                        name: '涨跌幅',
+                        type: 'line',
+                        data: changes,
+                        smooth: true
+                    }]
+                };
+                
+                myChart.setOption(option);
+                log('✅ 图表已渲染');
+                
+                // 6. 强制resize
+                setTimeout(() => {
+                    myChart.resize();
+                    log('✅ 图表已resize');
+                }, 100);
+                
+            })
+            .catch(error => {
+                log('❌ API请求失败: ' + error);
+            });
+    </script>
+</body>
+</html>

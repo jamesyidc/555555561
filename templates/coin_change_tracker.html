@@ -3562,11 +3562,11 @@ pm2 status                                                # 查看所有进程�
     </div>
 
     <script>
-        // 🔥 版本标识: 20260223-AUTO-COMPLETE-v8
-        console.log('🔥 JavaScript版本: 20260223-AUTO-COMPLETE-v8 - 智能完整数据加载版本');
+        // 🔥 版本标识: 20260223-FULL-DATA-FIX-v9
+        console.log('🔥 JavaScript版本: 20260223-FULL-DATA-FIX-v9 - 完整数据加载修复');
         console.log('📦 所有数据(RSI、27币之和、上涨占比)存储在同一个JSONL文件中');
-        console.log('🚀 智能加载策略: 首次快速加载4小时→2秒后自动加载完整24小时');
-        console.log('⚡ 保持快速加载体验，同时确保数据完整性');
+        console.log('🚀 智能加载优化: 自动检测数据量，确保加载完整24小时数据');
+        console.log('⚡ 修复15:48之前数据缺失问题，确保00:00-23:59完整显示');
         console.log('📦 Template version parameter:', '{{ v }}');
         console.log('⚡ 优化内容: 初始只加载4小时数据（240条），提升60%加载速度；延迟加载预判和模式检测');
         
@@ -4432,13 +4432,15 @@ pm2 status                                                # 查看所有进程�
                     window.historyDataLoaded = true;  // 标记已加载，后续可以加载完整数据
                     console.log(`✅ 历史数据加载成功: ${result.data.length}条记录`);
                     
-                    // 🚀 智能加载：如果这是初始加载（240条），在渲染完成后自动加载完整数据
-                    if (isInitialLoad && result.data.length === 240) {
-                        console.log('🔄 初始加载完成，将在2秒后自动加载完整数据...');
+                    // 🚀 智能加载：如果这是初始加载（少于1000条），在渲染完成后自动加载完整数据
+                    if (isInitialLoad && result.data.length < 1000) {
+                        console.log(`🔄 初始加载完成（${result.data.length}条），将在2秒后自动加载完整数据...`);
                         setTimeout(() => {
                             console.log('🔄 开始自动加载完整24小时数据...');
                             updateHistoryData(date);  // 递归调用，此时 historyDataLoaded = true，会加载1440条
                         }, 2000);  // 延迟2秒，让首次渲染完成
+                    } else if (isInitialLoad) {
+                        console.log(`✅ 已加载完整数据（${result.data.length}条），无需二次加载`);
                     }
                     
                     // 加载当天的预判数据
