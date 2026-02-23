@@ -6,15 +6,28 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="version" content="20260223-EMPTY-DATA-PROTECTION-v10-{{ v }}">
-    <title>27币涨跌幅追踪系统 v10 - 图表空白修复版</title>
+    <meta name="version" content="20260223-FULL-LOAD-FIX-v11-{{ v }}">
+    <title>27币涨跌幅追踪系统 v11 - 完整数据加载修复版</title>
     <!-- 
     ============================================================
-    版本: 2026-02-23 v10 - EMPTY-DATA-PROTECTION (图表空白修复)
+    版本: 2026-02-23 v11 - FULL-LOAD-FIX (完整数据一次性加载)
     缓存破坏: {{ v }}
     ============================================================
     
-    🔧 最新修复 v10 (2026-02-23 22:05):
+    🔧 最新修复 v11 (2026-02-23 22:20):
+    ----------------------------------------
+    问题1: 图表X轴不从00:00开始，而是从16:03开始
+    - 根因: 首次加载只加载240条（约4小时），显示最近4小时数据
+    - 修复: 首次加载就使用limit=1440，一次性加载完整24小时数据
+    - 移除: 删除了二次自动加载逻辑（已不需要）
+    - 效果: 图表始终显示完整00:00-23:59数据
+    
+    问题2: 10分钟上涨占比平均值显示空白
+    - 根因: 可能是数据为空或计算函数未被调用
+    - 修复: 添加详细日志追踪数据处理流程
+    - 效果: 便于定位问题并确保正确显示统计数据
+    
+    🔧 历史修复 v10 (2026-02-23 22:05):
     ----------------------------------------
     问题: 图表完全空白，不显示任何数据
     - 根因1: setOption使用notMerge=true，空数据时会清空整个图表
@@ -3584,7 +3597,7 @@ pm2 status                                                # 查看所有进程�
 
     <script>
         // 🔥 版本标识: 20260223-FULL-DATA-FIX-v9
-        console.log('🔥 JavaScript版本: 20260223-EMPTY-DATA-PROTECTION-v10 - 图表空白修复 (notMerge=false + 空数据保护)');
+        console.log('🔥 JavaScript版本: 20260223-FULL-LOAD-FIX-v11 - 完整数据一次性加载 (修复X轴起始时间 + 上涨占比统计)');
         console.log('📦 所有数据(RSI、27币之和、上涨占比)存储在同一个JSONL文件中');
         console.log('🚀 智能加载优化: 自动检测数据量，确保加载完整24小时数据');
         console.log('⚡ 修复15:48之前数据缺失问题，确保00:00-23:59完整显示');
@@ -4393,10 +4406,10 @@ pm2 status                                                # 查看所有进程�
         async function updateHistoryData(date = null) {
             try {
                 // 🚀 智能加载策略：
-                // 1. 首次快速加载240条（4小时）用于图表渲染
-                // 2. 后台自动加载完整1440条（24小时）
+                // 1. 首次加载完整数据（1440条，24小时）
+                // 2. 后续刷新也使用完整数据
                 const isInitialLoad = !window.historyDataLoaded;
-                const limit = isInitialLoad ? 240 : 1440;  // 初始4小时，完整24小时
+                const limit = 1440;  // 始终加载完整24小时数据
                 
                 // 如果指定了日期，则查询特定日期的数据
                 let url = `/api/coin-change-tracker/history?limit=${limit}`;
@@ -4450,19 +4463,8 @@ pm2 status                                                # 查看所有进程�
                 
                 if (result.success && result.data && result.data.length > 0) {
                     historyData = result.data;
-                    window.historyDataLoaded = true;  // 标记已加载，后续可以加载完整数据
-                    console.log(`✅ 历史数据加载成功: ${result.data.length}条记录`);
-                    
-                    // 🚀 智能加载：如果这是初始加载（少于1000条），在渲染完成后自动加载完整数据
-                    if (isInitialLoad && result.data.length < 1000) {
-                        console.log(`🔄 初始加载完成（${result.data.length}条），将在2秒后自动加载完整数据...`);
-                        setTimeout(() => {
-                            console.log('🔄 开始自动加载完整24小时数据...');
-                            updateHistoryData(date);  // 递归调用，此时 historyDataLoaded = true，会加载1440条
-                        }, 2000);  // 延迟2秒，让首次渲染完成
-                    } else if (isInitialLoad) {
-                        console.log(`✅ 已加载完整数据（${result.data.length}条），无需二次加载`);
-                    }
+                    window.historyDataLoaded = true;
+                    console.log(`✅ 历史数据加载成功: ${result.data.length}条记录 (完整24小时数据)`);
                     
                     // 加载当天的预判数据
                     const currentDate = date ? formatDate(date) : new Date().toISOString().split('T')[0];
@@ -6177,6 +6179,8 @@ pm2 status                                                # 查看所有进程�
             const groupedData = [];
             const labels = [];
             
+            console.log('📊 开始计算10分钟上涨占比柱状图，数据长度:', data.length);
+            
             // 遍历数据，每10分钟取一个平均值
             for (let i = 0; i < data.length; i++) {
                 const item = data[i];
@@ -6247,6 +6251,15 @@ pm2 status                                                # 查看所有进程�
             const avgValue = numericData.length > 0 ? (numericData.reduce((a, b) => a + b, 0) / numericData.length) : 0;
             const maxValue = numericData.length > 0 ? Math.max(...numericData) : 0;
             const minValue = numericData.length > 0 ? Math.min(...numericData) : 0;
+            
+            console.log('📊 10分钟上涨占比统计:', {
+                barDataLength: barData.length,
+                numericDataLength: numericData.length,
+                avg: avgValue,
+                max: maxValue,
+                min: minValue,
+                sample: numericData.slice(0, 5)
+            });
             
             // 更新统计数据显示（柱状图下方）
             const upRatioAvgEl = document.getElementById('upRatioAvg');
