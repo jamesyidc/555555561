@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>图表简化测试</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.0/echarts.min.js"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        #log { background: #f5f5f5; padding: 15px; margin: 15px 0; font-family: monospace; font-size: 12px; }
+        #chart { width: 100%; height: 500px; border: 2px solid #ddd; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>简化图表测试</h1>
+    <button onclick="testSimpleChart()">测试1: 简单图表</button>
+    <button onclick="testWithRealData()">测试2: 真实数据</button>
+    <div id="log"></div>
+    <div id="chart"></div>
+    
+    <script>
+        const log = (msg) => {
+            const div = document.getElementById('log');
+            div.innerHTML += new Date().toLocaleTimeString() + ' - ' + msg + '<br>';
+            console.log(msg);
+        };
+        
+        let chart = null;
+        
+        window.addEventListener('load', () => {
+            log('✅ 页面加载完成');
+            const chartDom = document.getElementById('chart');
+            chart = echarts.init(chartDom);
+            log('✅ ECharts实例创建成功');
+        });
+        
+        function testSimpleChart() {
+            log('🎨 测试简单图表...');
+            try {
+                chart.setOption({
+                    title: { text: '简单测试图表' },
+                    xAxis: { type: 'category', data: ['A', 'B', 'C', 'D', 'E'] },
+                    yAxis: { type: 'value' },
+                    series: [{
+                        name: '测试',
+                        type: 'line',
+                        data: [10, 20, 15, 25, 18]
+                    }]
+                });
+                log('✅ 简单图表渲染成功！');
+            } catch (e) {
+                log('❌ 简单图表渲染失败: ' + e.message);
+                console.error(e);
+            }
+        }
+        
+        async function testWithRealData() {
+            log('🎨 测试真实数据图表...');
+            try {
+                log('📡 请求API...');
+                const response = await fetch('/api/coin-change-tracker/history?limit=100');
+                const result = await response.json();
+                
+                log(`✅ API响应: ${result.count}条记录`);
+                
+                if (!result.data || result.data.length === 0) {
+                    log('❌ 没有数据');
+                    return;
+                }
+                
+                // 提取时间和涨跌幅
+                const times = result.data.map(d => {
+                    const bt = d.beijing_time || '';
+                    return bt.split(' ')[1] || bt;
+                });
+                
+                const changes = result.data.map(d => {
+                    return d.total_change || 0;
+                });
+                
+                log(`⏰ times: ${times.length}条`);
+                log(`📈 changes: ${changes.length}条`);
+                log(`📊 范围: ${Math.min(...changes).toFixed(2)}% ~ ${Math.max(...changes).toFixed(2)}%`);
+                
+                // 渲染图表
+                log('🎨 开始渲染图表...');
+                chart.setOption({
+                    title: { text: `真实数据图表 (${times.length}条)` },
+                    tooltip: { trigger: 'axis' },
+                    xAxis: { 
+                        type: 'category', 
+                        data: times,
+                        axisLabel: { interval: Math.floor(times.length / 10) }
+                    },
+                    yAxis: { 
+                        type: 'value',
+                        name: '涨跌幅 (%)'
+                    },
+                    series: [{
+                        name: '27币涨跌幅',
+                        type: 'line',
+                        data: changes,
+                        smooth: false
+                    }]
+                }, false, false);  // notMerge=false
+                
+                log('✅ 真实数据图表渲染成功！');
+                
+            } catch (e) {
+                log('❌ 真实数据图表渲染失败: ' + e.message);
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+</html>

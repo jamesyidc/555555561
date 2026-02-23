@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>配置测试</title></head><body>
+<script>
+// 模拟构建配置对象
+try {
+    const times = Array(1021).fill(0).map((_, i) => `${String(Math.floor(i/60)).padStart(2,'0')}:${String(i%60).padStart(2,'0')}:00`);
+    const changes = Array(1021).fill(0).map(() => Math.random() * 100 - 50);
+    
+    const points = [];
+    // 添加36个标记点
+    for (let i = 0; i < 36; i++) {
+        points.push({
+            name: `标记${i}`,
+            xAxis: Math.floor(Math.random() * 1021),
+            yAxis: Math.random() * 100 - 50,
+            value: `测试${i}`,
+            itemStyle: { color: '#FF0000' }
+        });
+    }
+    
+    const config = {
+        xAxis: { type: 'category', data: times },
+        yAxis: { type: 'value' },
+        series: [{
+            name: '涨跌幅',
+            type: 'line',
+            data: changes,
+            markPoint: { data: points }
+        }]
+    };
+    
+    console.log('✅ 配置对象构建成功');
+    console.log('Points:', points.length);
+    console.log('Times:', times.length);
+    console.log('Changes:', changes.length);
+    
+    // 测试JSON序列化
+    const json = JSON.stringify(config);
+    console.log('✅ JSON序列化成功，长度:', json.length);
+    
+} catch (e) {
+    console.error('❌ 配置对象构建失败:', e.message);
+    console.error(e.stack);
+}
+</script>
+</body></html>

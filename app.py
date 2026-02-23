@@ -1664,6 +1664,12 @@ def chart_debug_page():
     """图表详细调试页面"""
     return render_template('chart_debug.html')
 
+@app.route('/chart-simple-test')
+def chart_simple_test_page():
+    """图表简化测试页面"""
+    return render_template('chart_simple_test.html')
+
+
 
 @app.route('/coin-change-tracker')
 def coin_change_tracker_page():

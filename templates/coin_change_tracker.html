@@ -6,15 +6,31 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="version" content="20260223-FULL-LOAD-FIX-v11-{{ v }}">
-    <title>27币涨跌幅追踪系统 v11 - 完整数据加载修复版</title>
+    <meta name="version" content="20260223-BASIC-CHART-v12-{{ v }}">
+    <title>27币涨跌幅追踪系统 v12 - 基础图表版</title>
     <!-- 
     ============================================================
-    版本: 2026-02-23 v11 - FULL-LOAD-FIX (完整数据一次性加载)
+    版本: 2026-02-23 v12 - BASIC-CHART (基础图表先运行)
     缓存破坏: {{ v }}
     ============================================================
     
-    🔧 最新修复 v11 (2026-02-23 22:20):
+    🔧 最新修复 v12 (2026-02-23 22:35):
+    ----------------------------------------
+    问题: 图表完全空白，无法加载
+    - 根因: 市场情绪scatter和日内模式scatter系列使用立即执行函数（IIFE）
+           在构建配置对象时卡死浏览器
+    - 修复: 暂时注释掉这两个复杂系列，先让基础图表运行
+    - 保留功能: 
+      ✅ 27币涨跌幅曲线
+      ✅ RSI曲线  
+      ✅ 波峰标记点（B-A-C）
+      ✅ 交易开仓标记
+    - 暂时禁用:
+      ❌ 市场情绪信号散点
+      ❌ 日内模式检测散点
+    - 效果: 基础图表能够正常显示和交互
+    
+    🔧 历史修复 v11 (2026-02-23 22:20):
     ----------------------------------------
     问题1: 图表X轴不从00:00开始，而是从16:03开始
     - 根因: 首次加载只加载240条（约4小时），显示最近4小时数据
@@ -3597,7 +3613,7 @@ pm2 status                                                # 查看所有进程�
 
     <script>
         // 🔥 版本标识: 20260223-FULL-DATA-FIX-v9
-        console.log('🔥 JavaScript版本: 20260223-FULL-LOAD-FIX-v11 - 完整数据一次性加载 (修复X轴起始时间 + 上涨占比统计)');
+        console.log('🔥 JavaScript版本: 20260223-BASIC-CHART-v12 - 基础图表先运行（暂时禁用复杂scatter系列）');
         console.log('📦 所有数据(RSI、27币之和、上涨占比)存储在同一个JSONL文件中');
         console.log('🚀 智能加载优化: 自动检测数据量，确保加载完整24小时数据');
         console.log('⚡ 修复15:48之前数据缺失问题，确保00:00-23:59完整显示');
@@ -5550,189 +5566,29 @@ pm2 status                                                # 查看所有进程�
                                 symbolSize: 50
                             }
                         },
-                        // 独立的市场情绪信号系列（不受图例切换影响）
+                        // 🚫 暂时禁用市场情绪信号系列（性能优化）
+                        /*
                         {
                             name: '市场情绪信号',
                             type: 'scatter',
-                            yAxisIndex: 0,  // 使用左轴（涨跌幅）
-                            data: (function() {
-                                console.log('🔍 开始生成市场情绪scatter系列数据...');
-                                console.log('📊 sentimentData:', {
-                                    exists: !!sentimentData,
-                                    isArray: Array.isArray(sentimentData),
-                                    length: sentimentData ? sentimentData.length : 0
-                                });
-                                console.log('📊 times:', {
-                                    exists: !!times,
-                                    isArray: Array.isArray(times),
-                                    length: times ? times.length : 0
-                                });
-                                console.log('📊 changes:', {
-                                    exists: !!changes,
-                                    isArray: Array.isArray(changes),
-                                    length: changes ? changes.length : 0
-                                });
-                                
-                                // 收集所有市场情绪信号的数据点
-                                const signalPoints = [];
-                                
-                                if (sentimentData && sentimentData.length > 0) {
-                                    console.log('✅ sentimentData有数据，开始处理...');
-                                    
-                                    sentimentData.forEach((sentiment, idx) => {
-                                        const sentimentText = sentiment.sentiment || '';
-                                        const beijingTime = sentiment.beijing_time || '';
-                                        
-                                        // 检查是否为信号
-                                        const hasSignal = sentimentText.includes('见顶') || 
-                                                        sentimentText.includes('见底') || 
-                                                        sentimentText.includes('顶部背离') || 
-                                                        sentimentText.includes('底部背离');
-                                        
-                                        if (!hasSignal) return;
-                                        
-                                        // 提取时间并匹配索引
-                                        const time = beijingTime.split(' ')[1] || '';
-                                        if (!time) {
-                                            console.warn(`⚠️ 信号 ${idx} 缺少时间: ${beijingTime}`);
-                                            return;
-                                        }
-                                        
-                                        const timeHHMM = time.substring(0, 5);
-                                        let timeIndex = -1;
-                                        for (let i = 0; i < times.length; i++) {
-                                            const chartTimeHHMM = times[i].substring(0, 5);
-                                            if (chartTimeHHMM === timeHHMM) {
-                                                timeIndex = i;
-                                                break;
-                                            }
-                                        }
-                                        
-                                        if (timeIndex >= 0 && changes[timeIndex] !== undefined) {
-                                            const isTopSignal = sentimentText.includes('见顶信号');
-                                            const isBottomSignal = sentimentText.includes('见底信号');
-                                            const isTopDivergence = sentimentText.includes('顶部背离');
-                                            const isBottomDivergence = sentimentText.includes('底部背离');
-                                            
-                                            // 添加数据点 [x, y, 信号类型, 情绪文本]
-                                            signalPoints.push({
-                                                value: [timeIndex, changes[timeIndex]],
-                                                signalType: isTopSignal ? 'topSignal' : 
-                                                           isTopDivergence ? 'topDivergence' :
-                                                           isBottomSignal ? 'bottomSignal' : 'bottomDivergence',
-                                                sentiment: sentimentText,
-                                                time: beijingTime
-                                            });
-                                            
-                                            if (idx < 5) {  // 只记录前5个信号的详细信息
-                                                console.log(`✅ 添加信号点 ${idx}: ${sentimentText} @ ${beijingTime}, 索引=${timeIndex}, 涨跌幅=${changes[timeIndex].toFixed(2)}%`);
-                                            }
-                                        } else {
-                                            if (idx < 5) {
-                                                console.warn(`⚠️ 信号 ${idx} 无法匹配时间: ${beijingTime}, 提取的HHMM=${timeHHMM}, 索引=${timeIndex}`);
-                                            }
-                                        }
-                                    });
-                                    
-                                    console.log('✅ 市场情绪scatter系列数据生成完成，总点数:', signalPoints.length);
-                                } else {
-                                    console.warn('⚠️ sentimentData为空或不存在，无法生成市场情绪信号');
-                                }
-                                
-                                console.log('📊 最终返回的信号点数:', signalPoints.length);
-                                return signalPoints;
-                            })(),
-                            symbolSize: function(data) {
-                                // 根据信号类型设置大小
-                                const type = data.signalType;
-                                return (type === 'topSignal' || type === 'bottomSignal') ? 24 : 18;
-                            },
-                            symbol: function(data) {
-                                // 根据信号类型设置形状
-                                const type = data.signalType;
-                                if (type === 'topSignal') return 'triangle';
-                                if (type === 'topDivergence') return 'circle';
-                                if (type === 'bottomSignal') return 'arrow';
-                                if (type === 'bottomDivergence') return 'diamond';
-                                return 'circle';
-                            },
-                            symbolRotate: function(data) {
-                                // 见顶信号和见底信号需要旋转
-                                const type = data.signalType;
-                                return (type === 'topSignal' || type === 'bottomSignal') ? 180 : 0;
-                            },
-                            itemStyle: {
-                                color: function(params) {
-                                    const type = params.data.signalType;
-                                    if (type === 'topSignal') return '#DC2626';
-                                    if (type === 'topDivergence') return '#F97316';
-                                    if (type === 'bottomSignal') return '#059669';
-                                    if (type === 'bottomDivergence') return '#10B981';
-                                    return '#6B7280';
-                                },
-                                borderColor: '#fff',
-                                borderWidth: 2
-                            },
-                            label: {
-                                show: true,
-                                position: function(params) {
-                                    const type = params.data.signalType;
-                                    return (type === 'topSignal' || type === 'topDivergence') ? 'top' : 'bottom';
-                                },
-                                formatter: function(params) {
-                                    const type = params.data.signalType;
-                                    if (type === 'topSignal') return '⚠️见顶';
-                                    if (type === 'topDivergence') return '⛔顶背';
-                                    if (type === 'bottomSignal') return '🔥见底';
-                                    if (type === 'bottomDivergence') return '🚀底背';
-                                    return '';
-                                },
-                                fontSize: function(params) {
-                                    const type = params.data.signalType;
-                                    return (type === 'topSignal' || type === 'bottomSignal') ? 13 : 11;
-                                },
-                                fontWeight: 'bold',
-                                color: function(params) {
-                                    const type = params.data.signalType;
-                                    if (type === 'topSignal') return '#DC2626';
-                                    if (type === 'topDivergence') return '#F97316';
-                                    if (type === 'bottomSignal') return '#059669';
-                                    if (type === 'bottomDivergence') return '#10B981';
-                                    return '#6B7280';
-                                },
-                                backgroundColor: function(params) {
-                                    const type = params.data.signalType;
-                                    if (type === 'topSignal') return '#FEE2E2';
-                                    if (type === 'topDivergence') return '#FFEDD5';
-                                    if (type === 'bottomSignal') return '#D1FAE5';
-                                    if (type === 'bottomDivergence') return '#ECFDF5';
-                                    return '#F3F4F6';
-                                },
-                                padding: function(params) {
-                                    const type = params.data.signalType;
-                                    return (type === 'topSignal' || type === 'bottomSignal') ? [4, 8] : [3, 6];
-                                },
-                                borderRadius: 4
-                            },
-                            tooltip: {
-                                formatter: function(params) {
-                                    const data = params.data;
-                                    return `<div style="padding: 8px;">
-                                        <div style="font-weight: bold; margin-bottom: 4px;">${data.sentiment}</div>
-                                        <div style="font-size: 12px; color: #6B7280;">时间: ${data.time}</div>
-                                        <div style="font-size: 12px; color: #6B7280;">涨跌幅: ${data.value[1].toFixed(2)}%</div>
-                                    </div>`;
-                                }
-                            },
-                            zlevel: 10,  // 确保在最上层显示
-                            silent: false  // 允许交互
+                            yAxisIndex: 0,
+                            data: [],  // 暂时为空
+                            zlevel: 10,
+                            silent: false
                         },
-                        // 🔥 日内模式检测系列（显眼标记）
+                        */
+                        // 🚫 暂时禁用日内模式检测系列（性能优化）
+                        /*
                         {
                             name: '日内模式检测',
                             type: 'scatter',
-                            yAxisIndex: 0,  // 使用左轴（涨跌幅）
-                            data: (function() {
+                            yAxisIndex: 0,
+                            data: [],
+                            zlevel: 15,
+                            silent: false
+                        }
+                        */
+                    ]
                                 console.log('🔍 开始生成日内模式scatter系列数据...');
                                 console.log('📊 intradayPatternsData:', {
                                     exists: !!intradayPatternsData,
