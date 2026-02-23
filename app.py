@@ -1670,6 +1670,11 @@ def chart_simple_test_page():
     return render_template('chart_simple_test.html')
 
 
+@app.route('/coin-change-tracker-minimal')
+def coin_change_tracker_minimal():
+    """最小化测试页面 - 只显示基础曲线"""
+    return render_template('coin_change_tracker_minimal.html')
+
 
 @app.route('/coin-change-tracker')
 def coin_change_tracker_page():

@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="version" content="20260223-BASIC-CHART-v12.1-{{ v }}">
+    <meta name="version" content="20260223-LEGACY-DATA-v13-{{ v }}">
     <title>27币涨跌幅追踪系统 v12 - 基础图表版</title>
     <!-- 
     ============================================================
@@ -3613,7 +3613,7 @@ pm2 status                                                # 查看所有进程�
 
     <script>
         // 🔥 版本标识: 20260223-FULL-DATA-FIX-v9
-        console.log('🔥 JavaScript版本: 20260223-BASIC-CHART-v12.1 - 删除残留代码，修复语法错误');
+        console.log('🔥 JavaScript版本: 20260223-LEGACY-DATA-v13 - 删除残留代码，修复语法错误');
         console.log('📦 所有数据(RSI、27币之和、上涨占比)存储在同一个JSONL文件中');
         console.log('🚀 智能加载优化: 自动检测数据量，确保加载完整24小时数据');
         console.log('⚡ 修复15:48之前数据缺失问题，确保00:00-23:59完整显示');
@@ -3696,6 +3696,9 @@ pm2 status                                                # 查看所有进程�
             
             console.log('📊 ECharts实例已创建:', {trendChart, rankChart, upRatioBarChart});
             
+            // 🚫 禁用初始化setOption，避免空数据覆盖真实数据
+            // 改为只在数据加载后调用一次完整的setOption
+            /*
             // 趋势图配置
             trendChart.setOption({
                 tooltip: {
@@ -3864,6 +3867,7 @@ pm2 status                                                # 查看所有进程�
                     }
                 ]
             });
+            */
         }
         
         // 加载最后一次的RSI数据（用于初始化缓存）

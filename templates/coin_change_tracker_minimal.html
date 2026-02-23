@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最小化测试 - 27币涨跌幅追踪</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        #chartContainer { width: 100%; height: 600px; border: 1px solid #ccc; }
+        .info { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>最小化测试页面 - 只显示基础曲线</h1>
+    <div class="info">
+        <div>版本: <span id="version">加载中...</span></div>
+        <div>数据点数: <span id="dataCount">0</span></div>
+        <div>状态: <span id="status">初始化中...</span></div>
+    </div>
+    <div id="chartContainer"></div>
+    
+    <script>
+        console.log('🔥 最小化测试页面启动');
+        
+        // 初始化图表
+        const chartDom = document.getElementById('chartContainer');
+        const myChart = echarts.init(chartDom);
+        
+        document.getElementById('status').textContent = '正在加载数据...';
+        
+        // 加载数据
+        fetch('/api/coin-change-tracker/history?limit=1440')
+            .then(response => response.json())
+            .then(result => {
+                console.log('✅ 数据加载成功:', result.count, '条记录');
+                document.getElementById('version').textContent = `unified-${result.count}`;
+                document.getElementById('dataCount').textContent = result.count;
+                
+                if (!result.success || !result.data || result.data.length === 0) {
+                    throw new Error('数据为空');
+                }
+                
+                // 提取时间和涨跌幅数据
+                const times = [];
+                const changes = [];
+                
+                result.data.forEach(record => {
+                    const time = record.beijing_time.split(' ')[1].substring(0, 5); // "HH:MM"
+                    const change = record.total_change || record.cumulative_pct || 0;
+                    times.push(time);
+                    changes.push(change);
+                });
+                
+                console.log('📊 提取的数据:', {
+                    times_count: times.length,
+                    changes_count: changes.length,
+                    first_5_changes: changes.slice(0, 5),
+                    last_5_changes: changes.slice(-5)
+                });
+                
+                document.getElementById('status').textContent = '数据加载完成，正在渲染图表...';
+                
+                // **最简单的配置**
+                const option = {
+                    title: {
+                        text: '27币涨跌幅之和 - 最小化测试',
+                        left: 'center'
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: times,
+                        boundaryGap: false
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: '涨跌幅(%)'
+                    },
+                    series: [{
+                        name: '27币涨跌幅',
+                        type: 'line',
+                        data: changes,
+                        smooth: true,
+                        lineStyle: {
+                            color: '#3B82F6',
+                            width: 2
+                        },
+                        areaStyle: {
+                            color: 'rgba(59, 130, 246, 0.2)'
+                        }
+                    }]
+                };
+                
+                console.log('📊 开始调用 setOption...');
+                myChart.setOption(option);
+                console.log('✅ setOption 完成！');
+                
+                document.getElementById('status').textContent = '图表渲染完成✅';
+                
+                // Resize
+                window.addEventListener('resize', () => {
+                    myChart.resize();
+                });
+            })
+            .catch(error => {
+                console.error('❌ 错误:', error);
+                document.getElementById('status').textContent = '错误: ' + error.message;
+            });
+    </script>
+</body>
+</html>
