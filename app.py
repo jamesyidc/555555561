@@ -1649,6 +1649,11 @@ def index():
     """首页 - 功能导航"""
     return render_template('index.html')
 
+@app.route('/clear-cache')
+def clear_cache_page():
+    """缓存清除工具页面"""
+    return render_template('clear_cache.html')
+
 @app.route('/chart-test')
 def chart_test_page():
     """图表诊断测试页面"""

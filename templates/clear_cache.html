@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>清除缓存并刷新</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .version {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: #4caf50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+            border: none;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+        .btn-danger {
+            background: #f44336;
+        }
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        .steps {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .steps ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        .steps li {
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 5px;
+            color: #155724;
+            margin: 20px 0;
+            display: none;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔄 27币涨跌幅追踪 - 缓存清除工具</h1>
+        
+        <div class="version">
+            <strong>当前版本:</strong> 20260223-FULL-DATA-FIX-v9<br>
+            <strong>修复内容:</strong> 完整24小时数据显示（00:00-23:59）<br>
+            <strong>问题:</strong> 浏览器缓存导致新版本未加载
+        </div>
+
+        <div class="steps">
+            <h3>🎯 强制清除缓存步骤：</h3>
+            <ol>
+                <li>点击下方"<strong>清除缓存并跳转</strong>"按钮</li>
+                <li>页面会自动清除缓存并跳转到主页面</li>
+                <li>如果还是看到旧版本，按 <code>Ctrl+Shift+R</code> (Windows) 或 <code>Cmd+Shift+R</code> (Mac)</li>
+                <li>打开浏览器控制台（F12）查看版本号</li>
+            </ol>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="btn" onclick="clearAndGo()">✅ 清除缓存并跳转</button>
+            <button class="btn btn-danger" onclick="clearOnly()">🗑️ 仅清除缓存</button>
+        </div>
+
+        <div id="success" class="success">
+            ✅ 缓存已清除！正在跳转到主页面...
+        </div>
+
+        <div class="steps">
+            <h3>📋 手动清除方法（备用）：</h3>
+            <p><strong>方法1：浏览器设置</strong></p>
+            <ol>
+                <li>按 <code>Ctrl+Shift+Delete</code> (Windows) 或 <code>Cmd+Shift+Delete</code> (Mac)</li>
+                <li>选择"缓存的图片和文件"</li>
+                <li>时间范围选择"全部时间"</li>
+                <li>点击"清除数据"</li>
+            </ol>
+
+            <p><strong>方法2：隐私模式</strong></p>
+            <ol>
+                <li>按 <code>Ctrl+Shift+N</code> (Chrome) 或 <code>Ctrl+Shift+P</code> (Firefox)</li>
+                <li>在隐私窗口中访问页面</li>
+            </ol>
+
+            <p><strong>方法3：禁用缓存（开发者模式）</strong></p>
+            <ol>
+                <li>打开控制台（F12）</li>
+                <li>切换到 Network 标签</li>
+                <li>勾选 "Disable cache"</li>
+                <li>刷新页面</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function clearAndGo() {
+            // 清除所有缓存
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+
+            // 清除localStorage
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // 显示成功消息
+            document.getElementById('success').style.display = 'block';
+
+            // 2秒后跳转，使用时间戳参数
+            setTimeout(function() {
+                window.location.href = '/coin-change-tracker?v=' + Date.now();
+            }, 2000);
+        }
+
+        function clearOnly() {
+            // 清除所有缓存
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+
+            // 清除localStorage
+            localStorage.clear();
+            sessionStorage.clear();
+
+            document.getElementById('success').innerHTML = '✅ 缓存已清除！请手动刷新页面。';
+            document.getElementById('success').style.display = 'block';
+        }
+
+        // 页面加载时自动显示清除提示
+        console.log('🔄 缓存清除工具已加载');
+        console.log('📋 如果看到旧版本，请点击"清除缓存并跳转"按钮');
+    </script>
+</body>
+</html>
