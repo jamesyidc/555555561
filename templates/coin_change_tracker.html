@@ -3,16 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>27币涨跌幅追踪系统 v3.3.1</title>
+    <meta name="version" content="20260223-FULL-DATA-FIX-v9-{{ v }}">
+    <title>27币涨跌幅追踪系统 v9 - 完整数据修复版</title>
     <!-- 
     ============================================================
-    版本: 2026-02-23 v3.3.1 (稳定版)
+    版本: 2026-02-23 v9 - FULL-DATA-FIX (完整数据显示修复)
+    缓存破坏: {{ v }}
     ============================================================
     
-    🔧 最新修复 (2026-02-23):
+    🔧 最新修复 v9 (2026-02-23 21:45):
+    ----------------------------------------
+    问题: 图表只显示15:48之后的数据，缺失00:00-15:48数据
+    - 根因: 智能加载触发条件太严格 (=== 240)
+    - 修复: 放宽条件为 < 1000
+    - 效果: 确保完整24小时数据显示 (00:00-23:59)
+    
+    🔧 历史修复记录:
     ----------------------------------------
     问题1: 页面加载卡在0%，白屏无响应
     - 原因: JavaScript语法错误 "Missing catch or finally after try"
@@ -126,8 +135,11 @@
             <div style="font-size: 64px; margin-bottom: 20px; animation: pulse 1.5s ease-in-out infinite;">
                 📊
             </div>
-            <div style="font-size: 28px; font-weight: bold; margin-bottom: 30px;">
+            <div style="font-size: 28px; font-weight: bold; margin-bottom: 10px;">
                 27币涨跌幅追踪系统
+            </div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 20px; font-family: monospace;">
+                v9 - 完整数据修复版 | Build {{ v }}
             </div>
             <div style="width: 400px; max-width: 90vw; background: rgba(255,255,255,0.2); border-radius: 20px; padding: 8px; margin-bottom: 20px;">
                 <div id="progressBar" style="width: 0%; height: 30px; background: linear-gradient(90deg, #10b981 0%, #3b82f6 100%); border-radius: 15px; transition: width 0.3s ease-out; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">
